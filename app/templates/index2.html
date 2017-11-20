@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="{{ url_for('static', filename='js/jquery.js') }}" charset="utf-8"></script>
+    <script src="https://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+    <script src="https://cdn.bootcss.com/Base64/1.0.1/base64.js"></script>
+    <title>Title</title>
+</head>
+<body>
+用户名：<input id="username" value="bob" type="text"/>
+密码：<input id="password" value="password" type="password"/>
+<br>
+    <button id="btn1">获取Token</button>
+    <button id="btn2">发送请求</button>
+    <button id="btn3">更新Token</button>
+<div id="result"></div>
+</body>
+</html>
+<script>
+    $().ready(function () {
+        $.ajaxSetup({
+            beforeSend: function (request) {
+                {#access_token = $.cookie('access_token');
+                refresh_token = $.cookie('refresh_token');
+                data = access_token.split('.');
+                    exp = JSON.parse(atob(data[1])).id;
+                    console.log(exp)
+                if(access_token){
+                    data = access_token.split('.');
+                    exp = JSON.parse(atob(data[1])).exp;
+                    console.log((exp - Date.parse(new Date) / 1000));
+                    if ((exp - Date.parse(new Date) / 1000) <= 30) {
+                        request.setRequestHeader("Authorization", "Bearer "+refresh_token);
+
+                    }
+                    headers: {
+                        Authorization: "Bearer "+access_token
+                    }
+                }#}
+            }
+
+        });
+        //获取Token
+        $("#btn1").click(function () {
+            $.ajax({
+                url: '/token',
+                type: 'POST',
+                data: {
+                    username: $("#username").val(),
+                    password: $("#password").val()
+                },
+                success: function (data) {
+                    $.cookie('access_token', data.access_token);
+                    $.cookie('refresh_token', data.refresh_token);
+                    console.log(data);
+                    $("#result").append("access_token----："+data.access_token);
+                    $("#result").append("<br>");
+                    $("#result").append("refresh_token---："+data.refresh_token);
+
+                },
+                error: function (xhr,textStatus) {
+                    $("#result").html("错误")
+                    console.log('错误')
+                    console.log(xhr)
+                    console.log(textStatus)
+                }
+            })
+        });
+        //更新
+        $("#btn3").click(function () {
+            refresh_token = $.cookie('refresh_token');
+            $.ajax({
+                url: '/token',
+                type: 'UPDATE',
+                async: false,
+                headers: {
+                    Authorization: refresh_token
+                },
+                beforeSend:function(){
+                },
+                success: function (data) {
+                    console.log(data.access_token)
+                    $.cookie('access_token', data.access_token);
+                    $.cookie('refresh_token', data.refresh_token);
+                    $("#result").append("<br>");
+                    $("#result").append("<br>");
+                    $("#result").append("<br>");
+                    $("#result").append("更新后");
+                    $("#result").append("access_token："+data.access_token);
+                    $("#result").append("<br>");
+                    $("#result").append("refresh_token："+data.refresh_token);
+                },
+                error: function (xhr,textStatus) {
+                    $("#result").html("错误")
+                    console.log('错误')
+                    console.log(xhr)
+                    console.log(textStatus)
+                }
+            });
+        });
+        //发送请求
+        $("#btn2").click(function () {
+            access_token = $.cookie('access_token');
+
+                refresh_token = $.cookie('refresh_token');
+                data = access_token.split('.');
+            console.log(data[1]);
+                exp = JSON.parse(atob(data[1])).id;
+            ob = JSON.parse(atob(data[1]));
+            console.log(ob);
+            old = btoa(JSON.stringify(ob));
+            console.log(old);
+            ob.id=10;
+            console.log(ob);
+            newss = btoa(JSON.stringify(ob));
+            console.log(newss);
+            //测试更改token
+            {#access_token = data[0]+"."+newss+"."+data[2];#}
+
+            $.ajax({
+                url: '/v1/cookie',
+                type: 'GET',
+                headers: {
+                    Authorization: access_token
+                },
+                success: function (data) {
+                    $("#result").html(JSON.stringify(data));
+                },
+                error: function (data) {
+                    $("#result").html(data.responseText);
+                    console.log('error');
+                }
+            })
+        });
+    });
+</script>
